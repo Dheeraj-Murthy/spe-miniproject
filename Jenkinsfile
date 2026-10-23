@@ -20,7 +20,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         IMAGE_NAME = 'dheerajmurthy/calculator-api'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        STUDENT_EMAIL = 'ayushtiwari1405@gmail.com'
+        STUDENT_EMAIL = 'ms.dheerajmurthy@iiitb.ac.in'
     }
 
     stages {
