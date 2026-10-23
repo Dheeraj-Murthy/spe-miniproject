@@ -84,7 +84,7 @@ curl "http://localhost:8081/api/v1/subtract?a=10&b=4"
 
 ## CI/CD pipeline (Jenkinsfile)
 
-Declarative pipeline, triggered via Poll SCM (`H/5 * * * *`) — swap for a GitHub webhook once Jenkins is reachable from the internet.
+Declarative pipeline, triggered via a GitHub webhook (`githubPush()`). Since Jenkins runs locally, it needs a public URL for GitHub to reach it — see setup step 6 below (ngrok).
 
 | Stage | What it does |
 |---|---|
@@ -102,7 +102,9 @@ Email notification (success/failure) fires from the `post` block to the student'
 1. **Credentials**: Manage Jenkins -> Credentials -> add a "Username with password" credential, ID `dockerhub-credentials` (Docker Hub username + access token, not your account password).
 2. **Email**: Manage Jenkins -> System -> configure SMTP under "E-mail Notification" / Extended Email.
 3. **Job**: New Item -> Pipeline -> "Pipeline script from SCM" -> Git -> this repo's URL -> script path `Jenkinsfile`.
-4. Jenkins runs locally on `:8090` in this setup to avoid clashing with the app's own `:8082`/`:8081` ports.
+4. Jenkins runs locally on `:8080`; the app's own ports were moved to `:8082`/`:8081` to avoid the clash.
+5. **GitHub Integration Plugin** must be installed for the `githubPush()` trigger.
+6. **Public URL for the webhook** (local Jenkins only): run `ngrok http 8080`, take the `https://*.ngrok-free.app` URL it prints, and set it as the GitHub repo's webhook payload URL: `https://<ngrok-id>.ngrok-free.app/github-webhook/`, content type `application/json`, event: "Just the push event." ngrok must stay running for the webhook to reach Jenkins.
 
 ## Architecture
 
@@ -122,3 +124,5 @@ Jenkins (poll SCM) --> Checkout --> Build --> Test --> Docker Build --> Push (Do
                                                          \__________________/
                                                           calculator-net (bridge)
 ```
+
+- M S Dheeraj Murthy

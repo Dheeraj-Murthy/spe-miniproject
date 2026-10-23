@@ -7,9 +7,9 @@ pipeline {
     }
 
     triggers {
-        // Webhook preferred (configure GitHub webhook -> Jenkins /github-webhook/).
-        // Poll SCM kept as a fallback for local/offline demo use.
-        pollSCM('H/5 * * * *')
+        // GitHub webhook -> Jenkins /github-webhook/ (requires GitHub plugin + a
+        // publicly reachable Jenkins URL, e.g. via ngrok for local demo use).
+        githubPush()
     }
 
     environment {
