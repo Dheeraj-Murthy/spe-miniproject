@@ -16,6 +16,11 @@ th { background: #f1f5f9; }
 tr:nth-child(even) td { background: #f8fafc; }
 </style>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function() { hljs.highlightAll(); });</script>
+
 # End-to-End CI/CD Pipeline for a Calculator REST API
 
 **CSE 816 — Software Production Engineering — Mini-Project Report**
@@ -54,8 +59,6 @@ This report covers the implementation of a Spring Boot Calculator REST API (`com
 
 The application itself is intentionally simple; the engineering is in the pipeline around it. A push to `main` is checked out, built, tested, containerized, pushed to Docker Hub, and redeployed with zero manual steps.
 
-<div style="page-break-before: always; padding-top: 2.5rem;"></div>
-
 ## 2. Architecture
 
 <div style="height:3px;background:linear-gradient(90deg,#6366f1,#06b6d4);border-radius:2px;width:4rem;margin-bottom:1rem;"></div>
@@ -84,15 +87,16 @@ flowchart TD
     WH --> J
 
     subgraph J["Jenkins - Declarative Pipeline"]
-        direction TB
-        S1[Checkout] --> S2[Build] --> S3[Test] --> S4["Docker Build"] --> S5[Push] --> S6[Deploy]
+        direction LR
+        S1[Checkout] --> S2[Build] --> S3[Test] --> S4["Docker\nBuild"] --> S5[Push] --> S6[Deploy]
     end
 
     J -->|"docker compose up -d"| CP
 
     subgraph CP["Docker Compose Stack - calculator-net bridge"]
-        direction TB
-        NG["nginx proxy\n:8081"] --> API["calculator-api\n:8082\nHEALTHCHECK /actuator/health"]
+        direction LR
+        NG["nginx proxy\nhost :8081"] --> API1["calculator-api\nreplica 1"]
+        NG --> API2["calculator-api\nreplica 2"]
     end
 
     classDef github fill:#a4a9fe,stroke:#0d1117,color:#ffffff,stroke-width:2px
@@ -102,13 +106,11 @@ flowchart TD
 
     class GH github
     class S1,S2,S3,S4,S5,S6 jenkins
-    class NG,API docker
+    class NG,API1,API2 docker
     class WH webhook
 ```
 
-Jenkins and the deployed application run as separate local services, both reachable on `localhost` but on distinct ports (`:8080` for Jenkins, `:8082`/`:8081` for the app stack) to avoid port collisions during local development and demo.
-
-<div style="page-break-before: always; padding-top: 2.5rem;"></div>
+Jenkins and the deployed application run as separate local services, both reachable on `localhost` but on distinct ports (`:8080` for Jenkins, `:8081` for the app stack via nginx — `calculator-api` itself publishes no host port since it's scaled to two replicas) to avoid port collisions during local development and demo.
 
 ## 3. Pipeline stage descriptions
 
@@ -134,7 +136,7 @@ Build status (success/failure) triggers an email from the pipeline's `post` bloc
 
 **docker-compose.yml** brings up two services on a shared bridge network (`calculator-net`): `calculator-api` (the app, `restart: unless-stopped`, environment-driven JVM options, a Compose-level healthcheck mirroring the Dockerfile's) and `nginx` (a reverse proxy satisfying the "second component" requirement), which waits for `calculator-api`'s `service_healthy` condition before starting. A single `docker compose up -d` launches the full stack.
 
-<div style="page-break-before: always; padding-top: 2.5rem;"></div>
+<div style="page-break-before: always; padding-top: 1rem;"></div>
 
 ## 5. Version control practice
 
@@ -143,8 +145,6 @@ Build status (success/failure) triggers an email from the pipeline's `post` bloc
 The repository is public on GitHub (Fig. 1) with history built up over several commits across the implementation (scaffold → endpoints → error handling → tests → Dockerfile → Compose → Jenkinsfile → README), rather than a single end-of-project commit. A `.gitignore` excludes `target/`, IDE files, and common secret-file patterns (`.env`, `*.pem`, `*.key`); no credentials are committed — the Docker Hub token and SMTP password live only in the Jenkins credential store.
 
 Beyond the initial build-out, a follow-up change (regenerating the final report PDF) was pushed on a dedicated feature branch (`docs/regenerate-report-pdf`) and merged into `main` through GitHub pull request #1, with a real merge commit rather than a fast-forward (Fig. 2). That merge event is also what the GitHub webhook delivered to Jenkins (Fig. 12), demonstrating the full loop: branch → PR → merge → automatic pipeline trigger.
-
-<div style="page-break-before: always; padding-top: 2.5rem;"></div>
 
 ## 6. Challenges faced
 
@@ -171,8 +171,6 @@ Several real issues surfaced while wiring this up, beyond the application logic 
 > The first access token was created as read-only, so `docker push` authenticated successfully but failed with `unauthorized: access token has insufficient scopes`. Regenerating the token with read/write scope fixed it.
 
 
-<div style="page-break-before: always; padding-top: 2.5rem;"></div>
-
 > **Gmail SMTP authentication**
 > Email notifications initially failed with `535 5.7.8 Username and Password not accepted` — Gmail rejects a normal account password for SMTP once 2-Step Verification is involved; it requires a generated App Password instead. A follow-up slip sent the first successful notification to the wrong address (a stale email from an unrelated context) before it was corrected to the right inbox.
 
@@ -186,90 +184,97 @@ Several real issues surfaced while wiring this up, beyond the application logic 
 
 The pipeline satisfies all required stages — checkout, build, test (with published JUnit results), Docker build, push to Docker Hub via managed credentials, and Compose-based deploy with a health check — triggered automatically on a GitHub push. Most of the friction in building this came not from the application code but from the surrounding environment: tool version drift (Spring Boot 4's package moves), local port/service conflicts, and credential/scope misconfiguration — exactly the class of problem this course is meant to surface.
 
-<div style="page-break-before: always; padding-top: 2.5rem;"></div>
+<div style="page-break-before: always; padding-top: 1rem;"></div>
 
 ## 8. Appendix: Screenshots
 
 <div style="height:3px;background:linear-gradient(90deg,#6366f1,#06b6d4);border-radius:2px;width:4rem;margin-bottom:1rem;"></div>
 
-<div style="padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="01-github-repo-listing.jpg" alt="GitHub repository file listing" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<div style="page-break-inside: avoid; break-inside: avoid;">
+<img src="01-github-repo-listing.jpg" alt="GitHub repository file listing" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 1.5rem 0;"><strong>Fig. 1:</strong> GitHub repository — source, Jenkinsfile, Dockerfile, docker-compose.yml with per-feature commit history</p>
-<img src="02-git-history-branches.jpg" alt="Git log, merge commit and branches" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="02-git-history-branches.jpg" alt="Git log, merge commit and branches" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 2:</strong> Git history — incremental commits plus a feature branch (docs/regenerate-report-pdf) merged into main via PR #1</p>
 </div>
 
-<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="03-github-webhook-config.jpg" alt="GitHub webhook settings" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<div style="page-break-inside: avoid; break-inside: avoid; margin-top: 2rem;">
+<img src="03-github-webhook-config.jpg" alt="GitHub webhook settings" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 3:</strong> GitHub webhook configuration — payload URL tunneled through ngrok to local Jenkins, triggering on push</p>
 </div>
 
-<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="04-jenkins-pipeline-green-run.jpg" alt="Jenkins pipeline, all stages green" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<div style="page-break-inside: avoid; break-inside: avoid; margin-top: 2rem;">
+<img src="04-jenkins-pipeline-green-run.jpg" alt="Jenkins pipeline, all stages green" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 1.5rem 0;"><strong>Fig. 4:</strong> Jenkins pipeline — full green run, all stages (Checkout SCM → Checkout → Build → Test → Docker Build → Push → Deploy → Post Actions)</p>
-<img src="05-jenkins-push-stage-console.jpg" alt="Jenkins Push stage console output" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="05-jenkins-push-stage-console.jpg" alt="Jenkins Push stage console output" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 5:</strong> Jenkins Push stage — Docker Hub login and image push via the dockerhub-credentials Jenkins credential</p>
 </div>
 
-<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="06-dockerhub-repo-listing.jpg" alt="Docker Hub repository listing" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<div style="page-break-inside: avoid; break-inside: avoid; margin-top: 2rem;">
+<img src="06-dockerhub-repo-listing.jpg" alt="Docker Hub repository listing" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 1.5rem 0;"><strong>Fig. 6:</strong> Docker Hub — calculator-api image pushed and public</p>
-<img src="07-docker-ps-output.jpg" alt="docker ps output" style="max-width:100%;max-height:22vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="07-docker-ps-output.jpg" alt="docker ps output" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 7:</strong> docker ps showing both containers running, calculator-api reporting (healthy)</p>
 </div>
 
-<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="08-actuator-health-check.jpg" alt="Actuator health endpoint" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<div style="page-break-inside: avoid; break-inside: avoid; margin-top: 2rem;">
+<img src="08-actuator-health-check.jpg" alt="Actuator health endpoint" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 8:</strong> /actuator/health reporting all components UP</p>
 </div>
 
-<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="09-sample-api-response.jpg" alt="Sample calculator API response" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
-<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 1.5rem 0;"><strong>Fig. 9:</strong> Sample API response — GET /api/v1/add?a=2&amp;b=3</p>
-<img src="10-email-notification.jpg" alt="Build success email notification" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
-<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 10:</strong> Email notification on successful build, sent via the pipeline's post block</p>
-</div>
+<div style="page-break-inside: avoid; break-inside: avoid; margin-top: 2rem;">
+<div style="background:#0f172a; border-radius:10px; border:1px solid #e2e8f0; padding:1rem 1.25rem;">
 
-<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<p style="font-size:0.9rem;margin-bottom:0.5rem;"><strong>Listing 1:</strong> All four response shapes from a single live run — success, divide-by-zero (400), missing parameter (400), and health — confirming the validation and error-handling logic works end to end, not just the happy path.</p>
-<pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:0.75rem;overflow-x:auto;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);"><code>{
+<p style="color:#94a3b8;font-size:0.75rem;font-family:monospace;margin:0 0 0.25rem 0;">$ curl "http://localhost:8081/api/v1/add?a=2&amp;b=3"</p>
+<pre style="margin:0 0 1rem 0;font-size:0.75rem;overflow-x:auto;"><code class="language-json">{
   "operation": "add",
   "a": 2.0,
   "b": 3.0,
   "result": 5.0
-}
-{
+}</code></pre>
+
+<p style="color:#94a3b8;font-size:0.75rem;font-family:monospace;margin:0 0 0.25rem 0;">$ curl "http://localhost:8081/api/v1/divide?a=5&amp;b=0"</p>
+<pre style="margin:0 0 1rem 0;font-size:0.75rem;overflow-x:auto;"><code class="language-json">{
   "timestamp": "2026-10-30T12:05:36.244Z",
   "status": 400,
   "error": "Bad Request",
   "message": "Division by zero is not allowed",
   "path": "/api/v1/divide"
-}
-{
+}</code></pre>
+
+<p style="color:#94a3b8;font-size:0.75rem;font-family:monospace;margin:0 0 0.25rem 0;">$ curl "http://localhost:8081/api/v1/add?a=2"</p>
+<pre style="margin:0 0 1rem 0;font-size:0.75rem;overflow-x:auto;"><code class="language-json">{
   "timestamp": "2026-10-30T12:05:36.264Z",
   "status": 400,
   "error": "Bad Request",
   "message": "Missing required parameter: b",
   "path": "/api/v1/add"
-}
-{
+}</code></pre>
+
+<p style="color:#94a3b8;font-size:0.75rem;font-family:monospace;margin:0 0 0.25rem 0;">$ curl "http://localhost:8081/actuator/health"</p>
+<pre style="margin:0;font-size:0.75rem;overflow-x:auto;"><code class="language-json">{
   "status": "UP",
   "groups": ["liveness", "readiness"]
-}
-</code></pre>
+}</code></pre>
+</div>
+<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 9:</strong> All four response shapes from a single live run — success, divide-by-zero (400), missing parameter (400), and health — confirming the validation and error-handling logic works end to end, not just the happy path.</p>
 </div>
 
-<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="11-jenkins-test-results.jpg" alt="Jenkins per-build test results breakdown" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<div style="page-break-inside: avoid; break-inside: avoid; margin-top: 2rem;">
+<img src="10-email-notification.jpg" alt="Build success email notification" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
+<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 10:</strong> Email notification on successful build, sent via the pipeline's post block</p>
+</div>
+
+<div style="page-break-inside: avoid; break-inside: avoid; margin-top: 2rem;">
+<img src="11-jenkins-test-results.jpg" alt="Jenkins per-build test results breakdown" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 11:</strong> Jenkins build #11 test results — 11/11 passing, broken down by package (the two new NaN/Infinity validation tests highlighted "+2" in com.dheeraj.miniproject.service)</p>
 </div>
 
-<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="12-webhook-recent-deliveries.jpg" alt="GitHub webhook recent deliveries" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<div style="page-break-inside: avoid; break-inside: avoid; margin-top: 2rem;">
+<img src="12-webhook-recent-deliveries.jpg" alt="GitHub webhook recent deliveries" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 12:</strong> Webhook Recent Deliveries — a successful push delivery (HTTP 200) after earlier deliveries failed while the ngrok tunnel was being re-pointed</p>
 </div>
 
-<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="13-jenkins-full-stage-view.jpg" alt="Jenkins full stage view across builds" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<div style="page-break-inside: avoid; break-inside: avoid; margin-top: 2rem;">
+<img src="13-jenkins-full-stage-view.jpg" alt="Jenkins full stage view across builds" style="width:100%;max-width:560px;height:auto;display:block;margin:0.5rem auto;border-radius:8px;border:1px solid #e2e8f0;" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 13:</strong> Full Stage View — history across builds #2–#8; two early builds failed at Docker Build/Push/Deploy (Docker Hub token scope issue, Section 6), later builds green throughout</p>
 </div>
