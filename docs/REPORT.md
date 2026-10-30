@@ -118,7 +118,7 @@ Jenkins and the deployed application run as separate local services, both reacha
 |---|---|
 | **Checkout** | Pulls the latest `main` commit, triggered by a GitHub push webhook (`githubPush()`) tunneled to local Jenkins via `ngrok` — verified end to end, Figs. 3 and 12 |
 | **Build** | `mvn clean package -DskipTests` — compiles and packages the executable jar; tests deliberately skipped here so Build and Test fail independently |
-| **Test** | `mvn test` — 5 JUnit 5 unit tests (`CalculatorService`: add/subtract/multiply/divide/divide-by-zero) + 3 MockMvc integration tests against real `/api/v1/*` endpoints; results published from `target/surefire-reports/*.xml`, a failure stops the build before any image is built — Fig. 11 shows 9/9 passing consistently across builds #2–#8 |
+| **Test** | `mvn test` — 7 JUnit 5 unit tests (`CalculatorService`: add/subtract/multiply/divide/divide-by-zero/NaN/Infinity) + 3 MockMvc integration tests + 1 context-load test against real `/api/v1/*` endpoints; results published from `target/surefire-reports/*.xml`, a failure stops the build before any image is built — Fig. 11 shows all 11 passing, broken down by package |
 | **Docker Build** | Builds the multi-stage image, tagged `${BUILD_NUMBER}` and `latest` |
 | **Push** | Logs into Docker Hub via the Jenkins-managed `dockerhub-credentials` entry (never hard-coded) and pushes both tags — Fig. 5 |
 | **Deploy** | Sets `DOCKER_IMAGE` to the freshly pushed tag, runs `docker compose up -d --remove-orphans`, then polls `/actuator/health` until it responds — Fig. 7 |
@@ -260,8 +260,8 @@ The pipeline satisfies all required stages — checkout, build, test (with publi
 </div>
 
 <div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="11-jenkins-test-trend.jpg" alt="Jenkins test result trend across builds" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
-<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 11:</strong> Jenkins Test Result Trend — 9/9 tests passing consistently across builds #2 through #8</p>
+<img src="11-jenkins-test-results.jpg" alt="Jenkins per-build test results breakdown" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 11:</strong> Jenkins build #11 test results — 11/11 passing, broken down by package (the two new NaN/Infinity validation tests highlighted "+2" in com.dheeraj.miniproject.service)</p>
 </div>
 
 <div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">

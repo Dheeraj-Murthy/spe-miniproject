@@ -69,10 +69,11 @@ pipeline {
                     export DOCKER_IMAGE=${IMAGE_NAME}:${IMAGE_TAG}
                     docker compose up -d --remove-orphans
                 '''
-                // Give the container's own HEALTHCHECK a moment, then verify from the host.
+                // calculator-api has no published host port (scaled to 2 replicas behind
+                // nginx), so verify through the proxy instead of hitting it directly.
                 sh '''
                     for i in $(seq 1 10); do
-                        if curl -sf http://localhost:8082/actuator/health; then
+                        if curl -sf http://localhost:8081/actuator/health; then
                             exit 0
                         fi
                         sleep 3

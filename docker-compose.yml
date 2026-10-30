@@ -2,10 +2,9 @@ services:
   calculator-api:
     build: .
     image: ${DOCKER_IMAGE:-calculator-api:local}
-    container_name: calculator-api
     restart: unless-stopped
-    ports:
-      - "8082:8080"
+    deploy:
+      replicas: 2
     environment:
       - SPRING_APPLICATION_NAME=miniproject
       - JAVA_TOOL_OPTIONS=-Xmx256m

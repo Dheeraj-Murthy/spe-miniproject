@@ -41,8 +41,8 @@ docker compose up -d
 ```
 
 This starts:
-- `calculator-api` — the Spring Boot app, host port `8082` -> container `8080`, with a Docker `HEALTHCHECK` against `/actuator/health`.
-- `nginx` (`calculator-proxy`) — reverse proxy in front of the app, host port `8081` -> container `80`. Waits for `calculator-api` to report healthy before starting.
+- `calculator-api` — the Spring Boot app, scaled to **2 replicas**, each with a Docker `HEALTHCHECK` against `/actuator/health`. No host port published — only reachable through the proxy.
+- `nginx` (`calculator-proxy`) — reverse proxy in front of the app, host port `8081` -> container `80`. Resolves `calculator-api` through Docker's embedded DNS at request time (rather than a static upstream), so it both load-balances across the two replicas and automatically picks up new container IPs after a redeploy. Waits for `calculator-api` to report healthy before starting.
 
 Both share the `calculator-net` bridge network.
 
@@ -68,18 +68,12 @@ Invalid or missing `a`/`b` params also return HTTP 400 with a structured error b
 }
 ```
 
-Sample calls (direct, bypassing proxy):
+Sample calls, via the nginx proxy (the only externally reachable entry point — `calculator-api` itself publishes no host port since it's scaled to 2 replicas):
 
 ```bash
-curl "http://localhost:8082/api/v1/add?a=2&b=3"
-curl "http://localhost:8082/api/v1/divide?a=5&b=0"
-curl "http://localhost:8082/actuator/health"
-```
-
-Via the nginx proxy:
-
-```bash
-curl "http://localhost:8081/api/v1/subtract?a=10&b=4"
+curl "http://localhost:8081/api/v1/add?a=2&b=3"
+curl "http://localhost:8081/api/v1/divide?a=5&b=0"
+curl "http://localhost:8081/actuator/health"
 ```
 
 ## CI/CD pipeline (Jenkinsfile)
@@ -102,7 +96,7 @@ Email notification (success/failure) fires from the `post` block to the student'
 1. **Credentials**: Manage Jenkins -> Credentials -> add a "Username with password" credential, ID `dockerhub-credentials` (Docker Hub username + access token, not your account password).
 2. **Email**: Manage Jenkins -> System -> configure SMTP under "E-mail Notification" / Extended Email.
 3. **Job**: New Item -> Pipeline -> "Pipeline script from SCM" -> Git -> this repo's URL -> script path `Jenkinsfile`.
-4. Jenkins runs locally on `:8080`; the app's own ports were moved to `:8082`/`:8081` to avoid the clash.
+4. Jenkins runs locally on `:8080`; the app stack is only reachable through the nginx proxy on `:8081` to avoid the clash.
 5. **GitHub Integration Plugin** must be installed for the `githubPush()` trigger.
 6. **Public URL for the webhook** (local Jenkins only): run `ngrok http 8080`, take the `https://*.ngrok-free.app` URL it prints, and set it as the GitHub repo's webhook payload URL: `https://<ngrok-id>.ngrok-free.app/github-webhook/`, content type `application/json`, event: "Just the push event." ngrok must stay running for the webhook to reach Jenkins.
 
@@ -119,8 +113,11 @@ Jenkins (poll SCM) --> Checkout --> Build --> Test --> Docker Build --> Push (Do
                                                                             |
                                                                             v
                                                           docker compose up -d
-                                                         /                    \
-                                              calculator-api (8082)   nginx proxy (8081)
+                                                                            |
+                                                                            v
+                                                                    nginx proxy (8081)
+                                                                      /          \
+                                                        calculator-api x2   (Docker DNS, resolved per-request)
                                                          \__________________/
                                                           calculator-net (bridge)
 ```
