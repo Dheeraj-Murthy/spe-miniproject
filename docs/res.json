@@ -1,0 +1,56 @@
+{
+  "operation": "add",
+  "a": 2.0,
+  "b": 3.0,
+  "result": 5.0
+},
+{
+  "timestamp": "2026-10-30T12:05:36.244111880Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Division by zero is not allowed",
+  "path": "/api/v1/divide"
+},
+{
+  "timestamp": "2026-10-30T12:05:36.264178005Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Missing required parameter: b",
+  "path": "/api/v1/add"
+},
+{
+  "components": {
+    "diskSpace": {
+      "details": {
+        "total": 62671097856,
+        "free": 53740879872,
+        "threshold": 10485760,
+        "path": "/app/.",
+        "exists": true
+      },
+      "status": "UP"
+    },
+    "livenessState": {
+      "status": "UP"
+    },
+    "ping": {
+      "status": "UP"
+    },
+    "readinessState": {
+      "status": "UP"
+    },
+    "ssl": {
+      "details": {
+        "expiringChains": [],
+        "invalidChains": [],
+        "validChains": []
+      },
+      "status": "UP"
+    }
+  },
+  "groups": [
+    "liveness",
+    "readiness"
+  ],
+  "status": "UP"
+}

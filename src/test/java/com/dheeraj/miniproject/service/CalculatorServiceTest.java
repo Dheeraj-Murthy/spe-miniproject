@@ -1,6 +1,7 @@
 package com.dheeraj.miniproject.service;
 
 import com.dheeraj.miniproject.exception.DivisionByZeroException;
+import com.dheeraj.miniproject.exception.InvalidInputException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,5 +34,15 @@ class CalculatorServiceTest {
     @Test
     void divide_byZero_throwsException() {
         assertThrows(DivisionByZeroException.class, () -> calculatorService.divide(5, 0));
+    }
+
+    @Test
+    void add_withNaN_throwsInvalidInput() {
+        assertThrows(InvalidInputException.class, () -> calculatorService.add(Double.NaN, 3));
+    }
+
+    @Test
+    void add_withInfinity_throwsInvalidInput() {
+        assertThrows(InvalidInputException.class, () -> calculatorService.add(Double.POSITIVE_INFINITY, 3));
     }
 }

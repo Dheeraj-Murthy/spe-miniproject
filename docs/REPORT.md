@@ -40,9 +40,10 @@ tr:nth-child(even) td { background: #f8fafc; }
 2. [Architecture](#2-architecture)
 3. [Pipeline stage descriptions](#3-pipeline-stage-descriptions)
 4. [Containerization and deployment](#4-containerization-and-deployment)
-5. [Challenges faced](#5-challenges-faced)
-6. [Conclusion](#6-conclusion)
-7. [Appendix: Screenshots](#7-appendix-screenshots)
+5. [Version control practice](#5-version-control-practice)
+6. [Challenges faced](#6-challenges-faced)
+7. [Conclusion](#7-conclusion)
+8. [Appendix: Screenshots](#8-appendix-screenshots)
 
 
 ## 1. Overview
@@ -115,14 +116,14 @@ Jenkins and the deployed application run as separate local services, both reacha
 
 | Stage | What it does |
 |---|---|
-| **Checkout** | Pulls the latest `main` commit, triggered by a GitHub push webhook (`githubPush()`) tunneled to local Jenkins via `ngrok` |
+| **Checkout** | Pulls the latest `main` commit, triggered by a GitHub push webhook (`githubPush()`) tunneled to local Jenkins via `ngrok` — verified end to end, Figs. 3 and 12 |
 | **Build** | `mvn clean package -DskipTests` — compiles and packages the executable jar; tests deliberately skipped here so Build and Test fail independently |
-| **Test** | `mvn test` — 5 JUnit 5 unit tests (`CalculatorService`: add/subtract/multiply/divide/divide-by-zero) + 3 MockMvc integration tests against real `/api/v1/*` endpoints; results published from `target/surefire-reports/*.xml`, a failure stops the build before any image is built |
+| **Test** | `mvn test` — 5 JUnit 5 unit tests (`CalculatorService`: add/subtract/multiply/divide/divide-by-zero) + 3 MockMvc integration tests against real `/api/v1/*` endpoints; results published from `target/surefire-reports/*.xml`, a failure stops the build before any image is built — Fig. 11 shows 9/9 passing consistently across builds #2–#8 |
 | **Docker Build** | Builds the multi-stage image, tagged `${BUILD_NUMBER}` and `latest` |
-| **Push** | Logs into Docker Hub via the Jenkins-managed `dockerhub-credentials` entry (never hard-coded) and pushes both tags |
-| **Deploy** | Sets `DOCKER_IMAGE` to the freshly pushed tag, runs `docker compose up -d --remove-orphans`, then polls `/actuator/health` until it responds |
+| **Push** | Logs into Docker Hub via the Jenkins-managed `dockerhub-credentials` entry (never hard-coded) and pushes both tags — Fig. 5 |
+| **Deploy** | Sets `DOCKER_IMAGE` to the freshly pushed tag, runs `docker compose up -d --remove-orphans`, then polls `/actuator/health` until it responds — Fig. 7 |
 
-Build status (success/failure) triggers an email from the pipeline's `post` block. Compose's own idempotent reconciliation — a re-run only recreates containers whose config changed — satisfies the re-runnable/idempotent requirement without extra scripting.
+Build status (success/failure) triggers an email from the pipeline's `post` block (Fig. 10). Compose's own idempotent reconciliation — a re-run only recreates containers whose config changed — satisfies the re-runnable/idempotent requirement without extra scripting. Fig. 13 shows the full stage-view history across all 8 builds to date, including two transient early failures (builds #2 and #7) at the Docker Build/Push/Deploy stages that were diagnosed and fixed (see Section 6).
 
 
 ## 4. Containerization and deployment
@@ -135,7 +136,17 @@ Build status (success/failure) triggers an email from the pipeline's `post` bloc
 
 <div style="page-break-before: always; padding-top: 2.5rem;"></div>
 
-## 5. Challenges faced
+## 5. Version control practice
+
+<div style="height:3px;background:linear-gradient(90deg,#6366f1,#06b6d4);border-radius:2px;width:4rem;margin-bottom:1rem;"></div>
+
+The repository is public on GitHub (Fig. 1) with history built up over several commits across the implementation (scaffold → endpoints → error handling → tests → Dockerfile → Compose → Jenkinsfile → README), rather than a single end-of-project commit. A `.gitignore` excludes `target/`, IDE files, and common secret-file patterns (`.env`, `*.pem`, `*.key`); no credentials are committed — the Docker Hub token and SMTP password live only in the Jenkins credential store.
+
+Beyond the initial build-out, a follow-up change (regenerating the final report PDF) was pushed on a dedicated feature branch (`docs/regenerate-report-pdf`) and merged into `main` through GitHub pull request #1, with a real merge commit rather than a fast-forward (Fig. 2). That merge event is also what the GitHub webhook delivered to Jenkins (Fig. 12), demonstrating the full loop: branch → PR → merge → automatic pipeline trigger.
+
+<div style="page-break-before: always; padding-top: 2.5rem;"></div>
+
+## 6. Challenges faced
 
 <div style="height:3px;background:linear-gradient(90deg,#6366f1,#06b6d4);border-radius:2px;width:4rem;margin-bottom:1rem;"></div>
 
@@ -169,7 +180,7 @@ Several real issues surfaced while wiring this up, beyond the application logic 
 > Since Jenkins runs locally, GitHub's webhook delivery can't reach it directly; `ngrok http 8080` provides a temporary public tunnel, with the caveat that the free-tier URL changes on every restart and the webhook payload URL has to be re-pointed accordingly.
 
 
-## 6. Conclusion
+## 7. Conclusion
 
 <div style="height:3px;background:linear-gradient(90deg,#6366f1,#06b6d4);border-radius:2px;width:4rem;margin-bottom:1rem;"></div>
 
@@ -177,7 +188,7 @@ The pipeline satisfies all required stages — checkout, build, test (with publi
 
 <div style="page-break-before: always; padding-top: 2.5rem;"></div>
 
-## 7. Appendix: Screenshots
+## 8. Appendix: Screenshots
 
 <div style="height:3px;background:linear-gradient(90deg,#6366f1,#06b6d4);border-radius:2px;width:4rem;margin-bottom:1rem;"></div>
 
@@ -217,4 +228,48 @@ The pipeline satisfies all required stages — checkout, build, test (with publi
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 1.5rem 0;"><strong>Fig. 9:</strong> Sample API response — GET /api/v1/add?a=2&amp;b=3</p>
 <img src="10-email-notification.jpg" alt="Build success email notification" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 10:</strong> Email notification on successful build, sent via the pipeline's post block</p>
+</div>
+
+<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
+<p style="font-size:0.9rem;margin-bottom:0.5rem;"><strong>Listing 1:</strong> All four response shapes from a single live run — success, divide-by-zero (400), missing parameter (400), and health — confirming the validation and error-handling logic works end to end, not just the happy path.</p>
+<pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:0.75rem;overflow-x:auto;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);"><code>{
+  "operation": "add",
+  "a": 2.0,
+  "b": 3.0,
+  "result": 5.0
+}
+{
+  "timestamp": "2026-10-30T12:05:36.244Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Division by zero is not allowed",
+  "path": "/api/v1/divide"
+}
+{
+  "timestamp": "2026-10-30T12:05:36.264Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Missing required parameter: b",
+  "path": "/api/v1/add"
+}
+{
+  "status": "UP",
+  "groups": ["liveness", "readiness"]
+}
+</code></pre>
+</div>
+
+<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
+<img src="11-jenkins-test-trend.jpg" alt="Jenkins test result trend across builds" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 11:</strong> Jenkins Test Result Trend — 9/9 tests passing consistently across builds #2 through #8</p>
+</div>
+
+<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
+<img src="12-webhook-recent-deliveries.jpg" alt="GitHub webhook recent deliveries" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 12:</strong> Webhook Recent Deliveries — a successful push delivery (HTTP 200) after earlier deliveries failed while the ngrok tunnel was being re-pointed</p>
+</div>
+
+<div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
+<img src="13-jenkins-full-stage-view.jpg" alt="Jenkins full stage view across builds" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 13:</strong> Full Stage View — history across builds #2–#8; two early builds failed at Docker Build/Push/Deploy (Docker Hub token scope issue, Section 6), later builds green throughout</p>
 </div>
