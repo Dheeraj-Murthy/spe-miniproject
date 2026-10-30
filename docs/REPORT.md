@@ -182,39 +182,39 @@ The pipeline satisfies all required stages — checkout, build, test (with publi
 <div style="height:3px;background:linear-gradient(90deg,#6366f1,#06b6d4);border-radius:2px;width:4rem;margin-bottom:1rem;"></div>
 
 <div style="padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="Screen%20Shot%202026-10-23%20at%2021.41.27.jpg" alt="GitHub repository file listing" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="01-github-repo-listing.jpg" alt="GitHub repository file listing" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 1.5rem 0;"><strong>Fig. 1:</strong> GitHub repository — source, Jenkinsfile, Dockerfile, docker-compose.yml with per-feature commit history</p>
-<img src="Screen%20Shot%202026-10-23%20at%2021.41.18.jpg" alt="Git log and branches" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
-<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 2:</strong> Git commit history — incremental commits plus a feature branch (feature/report-and-docs) off main</p>
+<img src="02-git-history-branches.jpg" alt="Git log, merge commit and branches" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 2:</strong> Git history — incremental commits plus a feature branch (docs/regenerate-report-pdf) merged into main via PR #1</p>
 </div>
 
 <div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="Screen%20Shot%202026-10-23%20at%2021.41.41.jpg" alt="GitHub webhook settings" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="03-github-webhook-config.jpg" alt="GitHub webhook settings" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 3:</strong> GitHub webhook configuration — payload URL tunneled through ngrok to local Jenkins, triggering on push</p>
 </div>
 
 <div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="Screen%20Shot%202026-10-23%20at%2021.42.39.jpg" alt="Jenkins pipeline, all stages green" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="04-jenkins-pipeline-green-run.jpg" alt="Jenkins pipeline, all stages green" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 1.5rem 0;"><strong>Fig. 4:</strong> Jenkins pipeline — full green run, all stages (Checkout SCM → Checkout → Build → Test → Docker Build → Push → Deploy → Post Actions)</p>
-<img src="Screen%20Shot%202026-10-23%20at%2021.41.01.jpg" alt="Jenkins Push stage console output" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="05-jenkins-push-stage-console.jpg" alt="Jenkins Push stage console output" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 5:</strong> Jenkins Push stage — Docker Hub login and image push via the dockerhub-credentials Jenkins credential</p>
 </div>
 
 <div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="Screen%20Shot%202026-10-23%20at%2021.41.51.jpg" alt="Docker Hub repository listing" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="06-dockerhub-repo-listing.jpg" alt="Docker Hub repository listing" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 1.5rem 0;"><strong>Fig. 6:</strong> Docker Hub — calculator-api image pushed and public</p>
-<img src="Screen%20Shot%202026-10-23%20at%2021.59.08.jpg" alt="docker ps output" style="max-width:100%;max-height:22vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="07-docker-ps-output.jpg" alt="docker ps output" style="max-width:100%;max-height:22vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 7:</strong> docker ps showing both containers running, calculator-api reporting (healthy)</p>
 </div>
 
 <div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="Screen%20Shot%202026-10-23%20at%2021.55.58.jpg" alt="Actuator health endpoint" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="08-actuator-health-check.jpg" alt="Actuator health endpoint" style="max-width:100%;max-height:75vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 8:</strong> /actuator/health reporting all components UP</p>
 </div>
 
 <div style="page-break-before: always; padding-top: 2.5rem; page-break-inside: avoid; break-inside: avoid;">
-<img src="Screen%20Shot%202026-10-23%20at%2021.56.24.jpg" alt="Sample calculator API response" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="09-sample-api-response.jpg" alt="Sample calculator API response" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 1.5rem 0;"><strong>Fig. 9:</strong> Sample API response — GET /api/v1/add?a=2&amp;b=3</p>
-<img src="Screen%20Shot%202026-10-23%20at%2022.00.08.jpg" alt="Build success email notification" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
+<img src="10-email-notification.jpg" alt="Build success email notification" style="max-width:100%;max-height:32vh;display:block;margin:0.5rem auto;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(0,0,0,0.15);" />
 <p style="text-align:center;font-size:0.8rem;color:#64748b;margin:0.4rem 0 0 0;"><strong>Fig. 10:</strong> Email notification on successful build, sent via the pipeline's post block</p>
 </div>
